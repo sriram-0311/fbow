@@ -43,8 +43,58 @@ struct FBOW_API fBow:std::map<uint32_t,_float>{
 
     //returns a hash identifying this
     uint64_t hash()const;
-    //returns the similitude score between to image descriptors using L2 norm
-    static double score(const fBow &v1, const fBow &v2);
+
+};
+
+//Bag of words with augmented information. For each word, keeps information about the indices of the elements that have been classified into the word
+//it is computed at the desired level
+struct FBOW_API fBow2:std::map<uint32_t,std::vector<uint32_t>> {
+
+    void toStream(std::ostream &str) const  {
+        uint32_t _size=size();
+        str.write((char*)&_size,sizeof(_size));
+        for(const auto &e:*this) {
+            str.write((char*)&e.first,sizeof(e.first));
+            //now the vector
+            _size=e.second.size();
+            str.write((char*)&_size,sizeof(_size));
+            str.write((char*)&e.second[0],sizeof(e.second[0])*e.second.size());
+        }
+    }
+
+    void fromStream(std::istream &str)    {
+        uint32_t _sizeMap,_sizeVec;
+        std::vector<uint32_t> vec;
+        uint32_t key;
+
+        clear();
+        str.read((char*)&_sizeMap,sizeof(_sizeMap));
+        for(uint32_t i=0;i<_sizeMap;i++) {
+            str.read((char*)&key,sizeof(key));
+            str.read((char*)&_sizeVec,sizeof(_sizeVec));//vector size
+            vec.resize(_sizeVec);
+            str.read((char*)&vec[0],sizeof(vec[0])*_sizeVec);
+            insert({key,vec});
+        }
+    } 
+
+    //returns a hash identifying this
+    uint64_t hash()const {
+
+
+        uint64_t seed = 0;
+
+
+        for(const auto &e:*this){
+            seed^= e.first + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            for(const auto &idx:e.second)
+                seed^= idx + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+
+    }
+
 
 };
 
@@ -90,8 +140,11 @@ class FBOW_API Vocabulary
 
     //transform the features stored as rows in the returned BagOfWords
     fBow transform(const cv::Mat &features);
+    void transform(const cv::Mat &features, int level,fBow &result,fBow2&result2);
 
 
+    //returns the similitude score between to image descriptors using L2 norm
+    double score(const fBow &v1, const fBow &v2) const;
     //loads/saves from a file
     void readFromFile(const std::string &filepath);
     void saveToFile(const std::string &filepath);
@@ -120,7 +173,7 @@ class FBOW_API Vocabulary
     uint64_t hash()const;
 
 private:
-     void  setParams(  int aligment,int k,int desc_type,int desc_size, int nblocks,std::string desc_name)throw(std::runtime_error);
+     void  setParams(  int aligment,int k,int desc_type,int desc_size, int nblocks,std::string desc_name);
     struct params{
         char _desc_name_[50];//descriptor name. May be empty
         uint32_t _aligment=0,_nblocks=0 ;//memory aligment and total number of blocks
@@ -397,6 +450,52 @@ private:
             }while( !bn_info->isleaf() && bn_info->getId()!=0);
         }
         return result;
+    }
+
+    template<typename Computer>
+    void  _transform2(const cv::Mat &features,uint32_t storeLevel,fBow &r1,fBow2 &r2){
+         Computer comp;
+              comp.setParams(_params._desc_size,_params._desc_size_bytes_wp);
+              using DType=typename Computer::DType;//distance type
+              using TData=typename Computer::TData;//data type
+
+              r1.clear();
+              r2.clear();
+              std::pair<DType,uint32_t> best_dist_idx(std::numeric_limits<uint32_t>::max(),0);//minimum distance found
+              block_node_info *bn_info;
+              int nbits=ceil(log2(_params._m_k));
+              for(int cur_feature=0;cur_feature<features.rows;cur_feature++){
+                  comp.startwithfeature(features.ptr<TData>(cur_feature));
+                  //ensure feature is in a
+                  Block c_block=getBlock(0);
+                  uint32_t level=0;//current level of recursion
+                  uint32_t curNode=0;//id of the current node of the tree
+                  //copy to another structure and add padding with zeros
+                  do{
+                      //given the current block, finds the node with minimum distance
+                      best_dist_idx.first=std::numeric_limits<uint32_t>::max();
+                      for(int cur_node=0;cur_node<c_block.getN();cur_node++)
+                      {
+                          DType d= comp.computeDist(c_block.getFeature<TData>(cur_node));
+                          if (d<best_dist_idx.first) best_dist_idx=std::make_pair(d,cur_node);
+                      }
+                      if( level==storeLevel)//if reached level,save
+                          r2[curNode].push_back( cur_feature);
+
+                      bn_info=c_block.getBlockNodeInfo(best_dist_idx.second);
+                      //if the node is leaf get weight,else go to its children
+                      if ( bn_info->isleaf()){
+                          r1[bn_info->getId()]+=bn_info->weight;
+                          if( level<storeLevel)//store level not reached, save now
+                              r2[curNode].push_back( cur_feature);
+                        break;
+                      }
+                      else setBlock(bn_info->getId(),c_block);//go to its children
+                      curNode= curNode<<nbits;
+                      curNode|=best_dist_idx.second;
+                      level++;
+                  }while( !bn_info->isleaf() && bn_info->getId()!=0);
+              }
     }
 
 };

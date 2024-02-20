@@ -8,13 +8,7 @@ SET(THIS_LIBNAME fbow)
 
 ADD_LIBRARY(${THIS_LIBNAME} ${srcs} ${hdrs})
 
-SET_TARGET_PROPERTIES(${THIS_LIBNAME} PROPERTIES 				# create *nix style library versions + symbolic links
-        DEFINE_SYMBOL FBOW_DSO_EXPORTS
-        VERSION ${PROJECT_VERSION}
-        SOVERSION ${PROJECT_SOVERSION}
-        CLEAN_DIRECT_OUTPUT 1 					# allow creating static and shared libs without conflicts
-        OUTPUT_NAME "${THIS_LIBNAME}${PROJECT_DLLVERSION}" 	# avoid conflicts between library and binary target names
-)
+SET_TARGET_PROPERTIES(${THIS_LIBNAME}  	PROPERTIES CXX_STANDARD 17)
 TARGET_LINK_LIBRARIES(${THIS_LIBNAME} ${REQUIRED_LIBRARIES} )
 
 INSTALL(TARGETS ${THIS_LIBNAME}

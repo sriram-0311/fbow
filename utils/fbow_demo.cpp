@@ -100,7 +100,7 @@ void testVocCreation(const vector<cv::Mat> &features)
         {
 			v2 = voc.transform(features[j]);
 
-			double score = fBow::score(v1, v2);
+			double score = voc.score(v1, v2);
             cout << "Image " << i << " vs Image " << j << ": " << score << endl;
         }
     }

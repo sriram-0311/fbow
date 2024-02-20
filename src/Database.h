@@ -20,7 +20,7 @@
 
 #include "fbow.h"
 #include "QueryResults.h"
-#include "exports.h"
+#include "fbow_exports.h"
 
 namespace fbow {
 
@@ -31,6 +31,11 @@ typedef unsigned int WordId;
 
 /// Value of a word
 typedef double WordValue;
+
+/// feature vector
+typedef fBow2 FeatureVector;
+
+typedef unsigned int NodeId;
 
 
 
@@ -115,7 +120,7 @@ public:
    * Returns a pointer to the vocabulary used
    * @return vocabulary
    */
-  inline const Vocabulary* getVocabulary() const;
+   const Vocabulary* getVocabulary() const;
 
   /** 
    * Allocates some memory for the direct and inverted indexes
@@ -150,14 +155,14 @@ public:
    *   direct index
    * @return id of new entry
    */
-  EntryId add(const fBow &vec//, 
-    //const FeatureVector &fec = FeatureVector() 
+  EntryId add(const fBow &vec, 
+    const FeatureVector &fec = FeatureVector() 
 	);
 
   /**
    * Empties the database
    */
-  inline void clear();
+   void clear();
 
   /**
    * Returns the number of entries in the database 
@@ -216,7 +221,7 @@ public:
    * @return const reference to map of nodes and their associated features in
    *   the given entry
    */
-  //const FeatureVector& retrieveFeatures(EntryId id) const;
+  const FeatureVector& retrieveFeatures(EntryId id) const;
 
   /**
    * Stores the database in a file
@@ -329,7 +334,7 @@ protected:
   /* Direct file declaration */
 
   /// Direct index
- // typedef std::vector<FeatureVector> DirectFile;
+ typedef std::vector<FeatureVector> DirectFile;
   // DirectFile[entry_id] --> [ directentry, ... ]
 
 protected:
@@ -348,7 +353,7 @@ protected:
   InvertedFile m_ifile;
   
   /// Direct file (resized for allocation)
-  //DirectFile m_dfile;
+  DirectFile m_dfile;
   
   /// Number of valid entries in m_dfile
   int m_nentries;

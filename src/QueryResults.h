@@ -11,7 +11,7 @@
 #define __D_T_QUERY_RESULTS__
 
 #include <vector>
-#include "exports.h"
+#include "fbow_exports.h"
 namespace fbow {
 
 /// Id of entries of the database

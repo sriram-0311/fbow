@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
             {
 
                 vv2 = voc.transform(features[j][0]);
-                double score1 = vv.score(vv, vv2);
+                double score1 = voc.score(vv, vv2);
                 counter++;
                 //		if(score1 > 0.01f)
                 {

@@ -68,7 +68,7 @@ Database& Database::operator=
 {
   if(this != &db)
   {
-    //m_dfile = db.m_dfile;
+    m_dfile = db.m_dfile;
     m_dilevels = db.m_dilevels;
     m_ifile = db.m_ifile;
     m_nentries = db.m_nentries;
@@ -100,8 +100,8 @@ EntryId Database::add(
 // ---------------------------------------------------------------------------
 
 
-EntryId Database::add(const fBow &v//,
-  //const FeatureVector &fv
+EntryId Database::add(const fBow &v,
+  const fBow2 &fv
   )
 {
   EntryId entry_id = m_nentries++;
@@ -109,7 +109,7 @@ EntryId Database::add(const fBow &v//,
   fBow::const_iterator vit;
   std::vector<unsigned int>::const_iterator iit;
 
-  /*
+  
   if(m_use_di)
   {
     // update direct file
@@ -122,7 +122,7 @@ EntryId Database::add(const fBow &v//,
       m_dfile[entry_id] = fv;
     }
   }
-  */
+
 
   // update inverted file
   for(vit = v.begin(); vit != v.end(); ++vit)
@@ -165,7 +165,7 @@ EntryId Database::add(const fBow &v//,
 
 
  const Vocabulary*
-Database::getVocabulary() const
+  Database::getVocabulary() const
 {
   return m_voc;
 }
@@ -178,7 +178,7 @@ Database::getVocabulary() const
   // resize vectors
   m_ifile.resize(0);
   m_ifile.resize(m_voc->totalSize());
-  //m_dfile.resize(0);
+  m_dfile.resize(0);
   m_nentries = 0;
 }
 
@@ -201,10 +201,10 @@ void Database::allocate(int nd, int ni)
     }
   }
 
-  //if(m_use_di && (int)m_dfile.size() < nd)
-  //{
-  //  m_dfile.resize(nd);
-  //}
+  if(m_use_di && (int)m_dfile.size() < nd)
+  {
+   m_dfile.resize(nd);
+  }
 }
 
 
@@ -759,14 +759,14 @@ void Database::queryDotProduct(
 // ---------------------------------------------------------------------------
 
 
-/*
+
 const FeatureVector& Database::retrieveFeatures
   (EntryId id) const
 {
   assert(id < size());
   return m_dfile[id];
 }
-*/
+
 
 // --------------------------------------------------------------------------
 
@@ -847,7 +847,6 @@ void Database::save(cv::FileStorage &fs,
 
   fs << "directIndex" << "[";
 
-  /*
    for(auto dit = m_dfile.begin(); dit != m_dfile.end(); ++dit)
   {
     fs << "["; // entry of DF
@@ -870,7 +869,6 @@ void Database::save(cv::FileStorage &fs,
 
     fs << "]"; // entry of DF
   }
-  */
 
   fs << "]"; // directIndex
 
@@ -925,7 +923,7 @@ void Database::load(const cv::FileStorage &fs,
     }
   }
 
-  /*
+
   if(m_use_di)
   {
     fn = fdb["directIndex"];
@@ -966,7 +964,7 @@ void Database::load(const cv::FileStorage &fs,
       }
     } // for each entry
   } // if use_id
-  */
+
 }
 
 /*
